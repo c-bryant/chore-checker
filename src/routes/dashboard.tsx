@@ -333,8 +333,8 @@ function DashboardPage() {
     <div className="min-h-screen bg-amber-50">
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-5xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex flex-col sm:flex-row items-center sm:justify-between gap-2 sm:gap-0">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-start">
             <span className="text-2xl">🏠</span>
             <div>
               <h1 className="font-bold text-gray-800 leading-tight">Chore Chart</h1>
@@ -343,7 +343,7 @@ function DashboardPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-2 sm:mt-0">
             {isParent && (
               <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
                 <button
@@ -370,7 +370,7 @@ function DashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6">
+      <main className="max-w-5xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {actionError && (
           <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
             {actionError}
@@ -671,7 +671,7 @@ function DashboardPage() {
               {/* Add chore form */}
               <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
                 <h3 className="font-semibold text-gray-700 mb-3">Add a new chore</h3>
-                <div className="flex gap-2 flex-wrap mb-2">
+                <div className="flex gap-2 flex-wrap mb-2 justify-center sm:justify-start">
                   {EMOJIS.map((e) => (
                     <button
                       key={e}
@@ -682,7 +682,7 @@ function DashboardPage() {
                     </button>
                   ))}
                 </div>
-                <div className="flex gap-2 mt-2">
+                <div className="flex flex-col sm:flex-row gap-2 mt-2 w-full">
                   <input
                     type="text"
                     placeholder="Chore name"
@@ -711,7 +711,7 @@ function DashboardPage() {
               {choresList.length === 0 ? (
                 <p className="text-gray-400 text-sm italic px-2">No chores yet. Add one above!</p>
               ) : (
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
                   {choresList.map((chore) => (
                     <div key={chore.id} className="bg-white rounded-xl shadow-sm px-4 py-3 flex items-center gap-3">
                       {editingChoreId === chore.id ? (
