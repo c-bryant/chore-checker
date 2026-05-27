@@ -1,24 +1,16 @@
 import type { Handler } from '@netlify/functions'
-import { db } from '../../db/index.js'
-import { chores } from '../../db/schema.js'
 
 const handler: Handler = async (event) => {
-  const user = JSON.parse(event.body || '{}')
-
-  // Count existing chores as a proxy for whether parent exists.
-  // Assign 'parent' to first registered user, 'kid' to all others.
-  // The parent can also manually update roles in the Netlify dashboard.
-  let role = 'kid'
+  let user: any = {}
   try {
-    const existingChores = await db.select().from(chores).limit(1)
-    // A simpler heuristic: check if user metadata says they are a parent
-    const isParent = user?.user_metadata?.role === 'parent'
-    if (isParent) {
-      role = 'parent'
-    }
+    user = event.body ? JSON.parse(event.body) : {}
   } catch {
-    // DB not ready, default to kid
+    user = {}
   }
+
+  // The role selected during signup is stored in user_metadata.
+  // Roles can also be changed manually in the Netlify dashboard.
+  const role = user?.user_metadata?.role === 'parent' ? 'parent' : 'kid'
 
   return {
     statusCode: 200,

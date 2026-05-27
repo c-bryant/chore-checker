@@ -1,0 +1,8 @@
+node_modules
+
+# Local Netlify folder
+.netlify
+*.gen.ts
+/dist
+.tanstack
+.env.local

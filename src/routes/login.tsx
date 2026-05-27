@@ -1,15 +1,61 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { login, signup } from '@netlify/identity'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { login, signup } from '../lib/netlify-identity'
 import { useIdentity } from '../lib/identity-context'
-import { useState, useEffect } from 'react'
+import { hasRemoteIdentityUrl } from '../lib/netlify-identity-config'
+import { getServerUser } from '../lib/auth'
+import { useState } from 'react'
 
 export const Route = createFileRoute('/login')({
+  beforeLoad: async () => {
+    const user = await getServerUser()
+    if (user) throw redirect({ to: '/dashboard' })
+  },
   component: LoginPage,
 })
 
+function isLocalHost() {
+  return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
+}
+
+function getAuthErrorMessage(err: unknown, action: 'login' | 'signup') {
+  const message = err instanceof Error ? err.message : ''
+  const status = typeof err === 'object' && err !== null && 'status' in err ? err.status : undefined
+
+  if (isLocalHost() && !hasRemoteIdentityUrl && (!message || status === 404 || message.includes('404') || message.includes('Netlify Identity is not available'))) {
+    return 'Netlify Identity is not available on this local dev URL. Set VITE_NETLIFY_SITE_URL to your Netlify site URL to log in locally.'
+  }
+
+  if (message.toLowerCase().includes('email not confirmed')) {
+    return 'Email not confirmed. Open the latest verification email while the dev server is running, or confirm this user in the Netlify Identity dashboard.'
+  }
+
+  if (message) return message
+
+  return action === 'login'
+    ? 'Login failed. Check your email and password.'
+    : 'Signup failed. Try a different email.'
+}
+
+function timeoutError(message: string) {
+  return new Error(message)
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timeoutId: number | undefined
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(timeoutError(message)), ms)
+  })
+
+  try {
+    return await Promise.race([promise, timeoutPromise])
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+  }
+}
+
 function LoginPage() {
-  const { user, ready } = useIdentity()
-  const navigate = useNavigate()
+  const { ready } = useIdentity()
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,17 +64,30 @@ function LoginPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'confirm-email' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
-  useEffect(() => {
-    if (ready && user) navigate({ to: '/dashboard' })
-  }, [ready, user])
-
   const handleLogin = async () => {
     setStatus('loading')
+    setErrorMsg('')
     try {
-      await login(email, password)
-      navigate({ to: '/dashboard' })
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Login failed. Check your email and password.')
+      await withTimeout(
+        login(email, password),
+        15000,
+        'Login timed out. Check your local dev server and try again.',
+      )
+
+      const serverUser = await withTimeout(
+        getServerUser(),
+        10000,
+        'Login succeeded but local session check timed out.',
+      )
+
+      if (!serverUser) {
+        throw new Error('Login succeeded but no server session was found. Refresh and try again.')
+      }
+
+      // Use a full page load so server route guards see the latest auth cookies.
+      window.location.assign('/dashboard')
+    } catch (err: unknown) {
+      setErrorMsg(getAuthErrorMessage(err, 'login'))
       setStatus('error')
     }
   }
@@ -38,8 +97,8 @@ function LoginPage() {
     try {
       await signup(email, password, { full_name: name, role })
       setStatus('confirm-email')
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Signup failed. Try a different email.')
+    } catch (err: unknown) {
+      setErrorMsg(getAuthErrorMessage(err, 'signup'))
       setStatus('error')
     }
   }

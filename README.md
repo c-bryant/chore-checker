@@ -21,8 +21,6 @@ A family chore tracking app for parents and kids. Parents can set up weekly chor
 
 ## Running Locally
 
-> ⚠️ Netlify Identity requires a real Netlify deployment — authentication won't work on localhost.
-
 To work on the app without authentication:
 
 ```bash
@@ -30,7 +28,17 @@ npm install
 npm run dev  # starts Vite on port 3000
 ```
 
-To test auth, deploy a branch preview to Netlify and open the preview URL.
+To log in locally with existing Netlify Identity accounts, point the dev app at a deployed Netlify site that has Identity enabled:
+
+```bash
+cp .env.example .env.local
+# edit .env.local and set VITE_NETLIFY_SITE_URL=https://your-site-name.netlify.app
+npm run dev
+```
+
+The dev server proxies `/.netlify/identity/*` to that deployed site, so restart `npm run dev` after changing `.env.local`.
+
+New signups still need the deployed Netlify site/preview URL because Identity signup, confirmation emails, and role assignment are managed by Netlify.
 
 ## Database Migrations
 
